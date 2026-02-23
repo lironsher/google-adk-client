@@ -114,7 +114,7 @@ export class AdkClient {
     options?: RequestInit
   ): Promise<Response> {
     const url = `${this.baseUrl}${endpoint}`;
-    this.log("debug", `${options?.method ?? "GET"} ${url}`);
+    this.log("debug", `${options?.method ?? "GET"} ${url}`, { options });
 
     const response = await fetch(url, {
       ...options,
@@ -129,11 +129,12 @@ export class AdkClient {
       this.log("error", `API call failed: ${response.statusText}`, {
         response,
         url,
+        body: await response.text(),
       });
       throw new Error(`API call failed: ${response.statusText}`);
     }
 
-    this.log("debug", `${response.status} ${url}`);
+    this.log("debug", `${response.status} ${url}`, { response });
     return response;
   }
 
