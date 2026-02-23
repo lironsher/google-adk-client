@@ -5,7 +5,7 @@ A TypeScript client library for the Google ADK (Agent Development Kit).
 
 ## Breaking Changes
 
-This repository is a fork of @kentandrian/google-adk and introduces several breaking changes.
+This repository is a fork of @lironsher/google-adk and introduces several breaking changes.
 
 Key differences:
 - Enhanced logging capabilities
@@ -24,7 +24,7 @@ Upgrading from the original repository will require manual code adjustments.
 ## Installation
 
 ```bash
-npm install @kentandrian/google-adk
+npm install @lironsher/google-adk
 ```
 
 ## Usage
@@ -34,7 +34,7 @@ npm install @kentandrian/google-adk
 The core of the library is the `AdkClient` class. It provides methods for all the Google ADK agent API endpoints, organized into logical groups.
 
 ```typescript
-import { AdkClient } from "@kentandrian/google-adk";
+import { AdkClient } from "@lironsher/google-adk";
 
 // The client can be configured with environment variables:
 // process.env.ADK_BASE_URL = "https://my-adk-agent.example.com";
@@ -99,7 +99,7 @@ const session = await client.createSessionWithPreferences("my-session", {
 The client emits structured log events at `"debug"` and `"error"` levels. You can subscribe to these via the `onLog` constructor option or by calling `setLogHandler()` at any time.
 
 ```typescript
-import { AdkClient, type LogEntry } from "@kentandrian/google-adk";
+import { AdkClient, type LogEntry } from "@lironsher/google-adk";
 
 const client = new AdkClient({
   userId: "user-123",
@@ -130,7 +130,7 @@ The library provides two connectors for the Vercel AI SDK:
 
 ```typescript
 // src/app/api/chat/route.ts
-import { createAdkAiSdkStream } from "@kentandrian/google-adk/ai-sdk";
+import { createAdkAiSdkStream } from "@lironsher/google-adk/ai-sdk";
 
 export async function POST(req: Request) {
   const { messages } = await req.json();
@@ -153,8 +153,8 @@ This connector is a class that extends `HttpChatTransport` from the `ai` package
 ```typescript
 // Example usage in a React component
 import { useChat } from "@ai-sdk/react";
-import { AdkClient } from "@kentandrian/google-adk";
-import { AdkChatTransport } from "@kentandrian/google-adk/ai-sdk";
+import { AdkClient } from "@lironsher/google-adk";
+import { AdkChatTransport } from "@lironsher/google-adk/ai-sdk";
 
 const client = new AdkClient({
   baseUrl: "https://my-adk-agent.example.com",
