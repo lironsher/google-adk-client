@@ -1,6 +1,4 @@
-export type UIMessagePart =
-  | { type: "text"; text: string }
-  | { type: "file"; url: string; filename?: string; mediaType: string };
+export type UIMessagePart = { type: string; text?: string; url?: string; filename?: string; mediaType?: string; };
 
 export interface UIMessage {
   role: string;
