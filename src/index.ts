@@ -4,12 +4,13 @@ import { Debug } from "./api/debug";
 import { Evals } from "./api/evals";
 import { Events } from "./api/events";
 import { Sessions } from "./api/sessions";
-import type { AgentRunSsePayload, UIMessage } from "./types";
+import type { AgentRunSsePayload, LogHandler, LogLevel, UIMessage } from "./types";
 
 export interface AdkClientOptions {
   appName?: string;
   baseUrl?: string;
   userId: string;
+  onLog?: LogHandler;
 }
 
 /**
@@ -28,6 +29,7 @@ export class AdkClient {
   private readonly appName: string;
   private readonly baseUrl: string;
   private readonly userId: string;
+  private logHandler?: LogHandler;
 
   public readonly sessions: Sessions;
   public readonly artifacts: Artifacts;
@@ -40,6 +42,7 @@ export class AdkClient {
     const appName = options.appName ?? process.env.ADK_APP_NAME;
     const baseUrl = options.baseUrl ?? process.env.ADK_BASE_URL;
     this.userId = options.userId;
+    this.logHandler = options.onLog;
 
     if (!appName) {
       throw new Error(
@@ -98,11 +101,21 @@ export class AdkClient {
     });
   }
 
+  setLogHandler(handler: LogHandler): void {
+    this.logHandler = handler;
+  }
+
+  private log(level: LogLevel, message: string, data?: unknown): void {
+    this.logHandler?.({ level, message, data });
+  }
+
   private async request(
     endpoint: string,
     options?: RequestInit
   ): Promise<Response> {
     const url = `${this.baseUrl}${endpoint}`;
+    this.log("debug", `${options?.method ?? "GET"} ${url}`);
+
     const response = await fetch(url, {
       ...options,
       headers: {
@@ -113,9 +126,14 @@ export class AdkClient {
     });
 
     if (!response.ok) {
+      this.log("error", `API call failed: ${response.statusText}`, {
+        response,
+        url,
+      });
       throw new Error(`API call failed: ${response.statusText}`);
     }
 
+    this.log("debug", `${response.status} ${url}`);
     return response;
   }
 
@@ -130,31 +148,39 @@ export class AdkClient {
   private transformMessagesToAdkNewMessage(
     messages: UIMessage[]
   ): AgentRunSsePayload["newMessage"] {
-    const lastMessage = messages[messages.length - 1];
+    try {
+      const lastMessage = messages[messages.length - 1];
 
-    const parts = lastMessage.parts.map((part) => {
-      switch (part.type) {
-        case "text":
-          return { text: part.text };
-        case "file": {
-          const [_, base64Data] = part.url.split(",");
-          return {
-            inlineData: {
-              data: base64Data,
-              displayName: part.filename ?? "file",
-              mimeType: part.mediaType,
-            },
-          };
+      const parts = lastMessage.parts.map((part) => {
+        switch (part.type) {
+          case "text":
+            return { text: part.text };
+          case "file": {
+            const [_, base64Data] = part.url?.split(",") ?? [];
+            return {
+              inlineData: {
+                data: base64Data,
+                displayName: part.filename ?? "file",
+                mimeType: part.mediaType,
+              },
+            };
+          }
+          default:
+            return {};
         }
-        default:
-          return {};
-      }
-    });
+      });
 
-    return {
-      parts,
-      role: lastMessage.role,
-    };
+      return {
+        parts,
+        role: lastMessage.role,
+      };
+    } catch (error) {
+      this.log("error", "Failed to transform messages to ADK format, USE UIMessage format instead", {
+        error,
+        messages,
+      });
+      throw error;
+    }
   }
 
   async runSse(sessionId: string, messages: UIMessage[]): Promise<Response> {
