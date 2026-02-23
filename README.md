@@ -2,6 +2,17 @@
 
 A TypeScript client library for the Google ADK (Agent Development Kit).
 
+
+## Breaking Changes
+
+This repository is a fork of @kentandrian/google-adk and introduces several breaking changes.
+
+Key differences:
+- Enhanced logging capabilities
+- Full TypeScript support
+
+Upgrading from the original repository will require manual code adjustments.
+
 ## Features
 
 - **Simple and robust:** A high-level, easy-to-use client library that abstracts away the complexities of the Google ADK agent API.
