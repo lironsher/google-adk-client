@@ -17,10 +17,10 @@ Publishing is triggered automatically via GitHub Actions on a non-prerelease Git
 
 ## Architecture
 
-This is a TypeScript npm package (`@lironsher/google-adk`) that wraps the Google ADK agent REST API with two entry points:
+This is a TypeScript npm package (`@liron_sher/google-adk`) that wraps the Google ADK agent REST API with two entry points:
 
-- **`@lironsher/google-adk`** — exports `AdkClient` and all types
-- **`@lironsher/google-adk/ai-sdk`** — exports Vercel AI SDK connectors (`AdkChatTransport`, `createAdkAiSdkStream`)
+- **`@liron_sher/google-adk`** — exports `AdkClient` and all types
+- **`@liron_sher/google-adk/ai-sdk`** — exports Vercel AI SDK connectors (`AdkChatTransport`, `createAdkAiSdkStream`)
 
 ### `AdkClient` (src/index.ts)
 
