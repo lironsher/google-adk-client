@@ -70,12 +70,8 @@ export class AdkChatTransport extends HttpChatTransport<UIMessage> {
       throw new Error("Session ID or Chat ID is required");
     }
 
-    const response = await this.adk.runSse(resolvedSessionId, messages as never);
+    return await this.adk.runSse(resolvedSessionId, messages as never);
 
-    if (!response.body) {
-      throw new Error("No response body from ADK agent");
-    }
 
-    return this.processResponseStream(response.body);
   }
 }

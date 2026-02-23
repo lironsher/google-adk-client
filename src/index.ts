@@ -1,3 +1,5 @@
+import type { UIMessageChunk } from "ai";
+
 import { Apps } from "./api/apps";
 import { Artifacts } from "./api/artifacts";
 import { Debug } from "./api/debug";
@@ -5,6 +7,7 @@ import { Evals } from "./api/evals";
 import { Events } from "./api/events";
 import { Sessions } from "./api/sessions";
 import type { AgentRunSsePayload, LogHandler, LogLevel, UIMessage } from "./types";
+import { generateUUID } from "./utils";
 
 export interface AdkClientOptions {
   appName?: string;
@@ -184,7 +187,7 @@ export class AdkClient {
     }
   }
 
-  async runSse(sessionId: string, messages: UIMessage[]): Promise<Response> {
+  async runSse(sessionId: string, messages: UIMessage[]): Promise<ReadableStream<UIMessageChunk>> {
     const newMessage = this.transformMessagesToAdkNewMessage(messages);
     const body: AgentRunSsePayload = {
       appName: this.appName,
@@ -194,14 +197,47 @@ export class AdkClient {
       streaming: true,
     };
 
-    return this.request("/run_sse", {
+    const response = await this.request("/run_sse", {
       body: JSON.stringify(body),
       headers: { accept: "text/event-stream" },
       method: "POST",
     });
+
+    return this.processResponseText(await response.text());
   }
 
-  async run(sessionId: string, messages: UIMessage[]): Promise<Response> {
+  processResponseText(text: string): ReadableStream<UIMessageChunk> {
+    const messageId = generateUUID();
+    const lines = text.split("\n");
+
+    return new ReadableStream({
+      start(controller) {
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            try {
+              const json = JSON.parse(line.substring(6));
+              if (json?.partial && json?.content?.parts?.[0].text) {
+                const chunk: UIMessageChunk = {
+                  type: "text-delta",
+                  id: messageId,
+                  delta: json.content.parts[0].text,
+                };
+                controller.enqueue(chunk);
+              }
+            } catch (error) {
+              console.error(error);
+            }
+          }
+        }
+        controller.close();
+      },
+    });
+  }
+
+  async run<T = unknown>(
+    sessionId: string,
+    messages: UIMessage[]
+  ): Promise<T> {
     const newMessage = this.transformMessagesToAdkNewMessage(messages);
     const body: AgentRunSsePayload = {
       appName: this.appName,
@@ -211,9 +247,22 @@ export class AdkClient {
       streaming: false,
     };
 
-    return this.request("/run", {
+    const response = await this.request("/run", {
       body: JSON.stringify(body),
       method: "POST",
+    });
+
+    return response.json();
+  }
+
+  async createSessionWithPreferences(sessionId?: string, options?: any): Promise<any> {
+    if (!sessionId) {
+      sessionId = `session_${Math.random().toString(36).substring(2, 15)}`;
+    }
+
+    return this.requestJson(`/apps/${this.appName}/users/${this.userId}/sessions/${sessionId}`, {
+      method: "POST",
+      body: JSON.stringify(options || {}),
     });
   }
 }
